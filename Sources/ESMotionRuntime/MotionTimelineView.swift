@@ -20,6 +20,20 @@ public struct MotionTimelineView<Scene: MotionSceneDescriptor, Content: View>: V
         self.scene = scene
         self.isSuspended = isSuspended
         self.content = content
+        let timestamp = ProcessInfo.processInfo.systemUptime
+        _frame = State(
+            initialValue: MotionFrame(
+                timestamp: timestamp,
+                targetTimestamp: timestamp,
+                deltaTime: 0,
+                wrappedTime: MotionClock.wrappedTime(
+                    for: Date(),
+                    wrap: scene.budget.timeWrap
+                ),
+                renderScale: scene.budget.baseRenderScale,
+                quality: .full
+            )
+        )
     }
 
     public var body: some View {
