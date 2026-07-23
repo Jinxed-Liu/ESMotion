@@ -22,6 +22,8 @@ public final class MotionDisplayCoordinator {
 
     private let metricsStore: MotionMetricsStore
     private var registrations: [UUID: Registration] = [:]
+    private var activeCallbacks: [Callback] = []
+    private var pendingMetricSamples: [MotionMetricSample] = []
     private var runtimeInputs = MotionRuntimeInputs()
     private var previousTimestamp: TimeInterval?
     private var timeWrap: TimeInterval = 1_800
@@ -34,6 +36,7 @@ public final class MotionDisplayCoordinator {
 
     public init(metricsStore: MotionMetricsStore = MotionMetricsStore()) {
         self.metricsStore = metricsStore
+        pendingMetricSamples.reserveCapacity(30)
     }
 
     isolated deinit {
@@ -110,6 +113,7 @@ public final class MotionDisplayCoordinator {
         let activeRegistrations = registrations.values.filter {
             !$0.isSuspended
         }
+        activeCallbacks = activeRegistrations.map(\.callback)
         activeBudget = activeRegistrations
             .map(\.budget)
             .reduce(nil) { current, incoming in
@@ -188,6 +192,7 @@ public final class MotionDisplayCoordinator {
         timer = nil
         #endif
         previousTimestamp = nil
+        flushMetrics()
     }
 
     private func updateDriverPolicy() {
@@ -233,10 +238,7 @@ public final class MotionDisplayCoordinator {
         timestamp: TimeInterval,
         targetTimestamp: TimeInterval
     ) {
-        let activeRegistrations = registrations.values.filter {
-            !$0.isSuspended
-        }
-        guard !decision.isPaused, !activeRegistrations.isEmpty else {
+        guard !decision.isPaused, !activeCallbacks.isEmpty else {
             return
         }
         let delta = previousTimestamp.map { timestamp - $0 } ?? 0
@@ -250,18 +252,28 @@ public final class MotionDisplayCoordinator {
             renderScale: decision.renderScale,
             quality: decision.quality
         )
-        for registration in activeRegistrations {
-            registration.callback(frame)
+        for callback in activeCallbacks {
+            callback(frame)
         }
 
         let sample = MotionMetricSample(
             timestamp: timestamp,
             frameInterval: delta,
-            callbackCount: activeRegistrations.count,
+            callbackCount: activeCallbacks.count,
             quality: decision.quality
         )
+        pendingMetricSamples.append(sample)
+        if pendingMetricSamples.count >= 30 {
+            flushMetrics()
+        }
+    }
+
+    private func flushMetrics() {
+        guard !pendingMetricSamples.isEmpty else { return }
+        let samples = pendingMetricSamples
+        pendingMetricSamples.removeAll(keepingCapacity: true)
         Task {
-            await metricsStore.append(sample)
+            await metricsStore.append(contentsOf: samples)
         }
     }
 }

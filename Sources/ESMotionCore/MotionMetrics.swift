@@ -34,6 +34,13 @@ public actor MotionMetricsStore {
         }
     }
 
+    public func append(contentsOf newSamples: [MotionMetricSample]) {
+        samples.append(contentsOf: newSamples)
+        if samples.count > capacity {
+            samples.removeFirst(samples.count - capacity)
+        }
+    }
+
     public func snapshot() -> [MotionMetricSample] {
         samples
     }

@@ -89,10 +89,12 @@ public extension View {
     func motionTransitionSource(
         id: MotionTransitionID,
         in namespace: Namespace.ID,
-        spec: MotionTransitionSpec = .card
+        spec: MotionTransitionSpec = .card,
+        background: Color = .clear
     ) -> some View {
         matchedTransitionSource(id: id, in: namespace) { source in
             source
+                .background(background)
                 .clipShape(.rect(cornerRadius: spec.cornerRadius))
         }
     }

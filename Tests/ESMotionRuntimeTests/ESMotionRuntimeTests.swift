@@ -60,4 +60,8 @@ final class ESMotionRuntimeTests: XCTestCase {
         coordinator.unregister(ambient)
         coordinator.unregister(interaction)
     }
+
+    func testTransitionSourceAcceptsHostBackgroundColor() {
+        XCTAssertEqual(MotionTransitionSpec.card.cornerRadius, 24)
+    }
 }
