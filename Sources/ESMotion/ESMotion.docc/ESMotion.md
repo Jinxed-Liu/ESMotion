@@ -20,8 +20,15 @@ Use ``MotionTransitionHost`` with ``SwiftUI/NavigationStack`` to register shared
 ### Transitions
 
 - ``MotionTransitionHost``
+- ``MotionTransitionCoordinator``
+- ``MotionTransitionPhase``
 - ``MotionTransitionID``
 - ``MotionTransitionSpec``
+- ``MotionTransitionRenderingMode``
+- ``MotionTransitionProxy``
+- ``MotionTransitionSnapshotPolicy``
+- ``MotionTransitionFallbackReason``
+- ``MotionTransitionMetrics``
 
 ### Assets and scenes
 

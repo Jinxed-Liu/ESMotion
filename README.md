@@ -33,40 +33,75 @@ Then depend on the umbrella product:
 .product(name: "ESMotion", package: "ESMotion")
 ```
 
-## Hybrid transition example
+## Stable transition example
 
 ```swift
-@Namespace private var transitionNamespace
+@State private var engine = MotionEngine()
+@State private var selectedCard: Card?
 
-Button {
-    selectedCard = card
-} label: {
-    CardView(card: card)
-        .motionTransitionSource(
-            id: MotionTransitionID(card.id),
-            in: transitionNamespace,
-            spec: .card
-        )
-}
-.buttonStyle(MotionSurfaceButtonStyle())
-
-.navigationDestination(item: $selectedCard) { card in
-    CardDetail(card: card)
-        .motionTransitionDestination(
-            id: MotionTransitionID(card.id),
-            in: transitionNamespace,
-            spec: .card
-        )
+MotionHost(engine: engine) {
+    MotionTransitionHost { namespace in
+        NavigationStack {
+            Button {
+                selectedCard = card
+            } label: {
+                CardView(card: card)
+                    .motionTransitionSource(
+                        id: MotionTransitionID(card.id),
+                        in: namespace,
+                        spec: .card
+                    )
+            }
+            .navigationDestination(item: $selectedCard) { card in
+                CardDetail(card: card)
+                    .motionTransitionDestination(
+                        id: MotionTransitionID(card.id),
+                        in: namespace,
+                        spec: .card
+                    )
+                    .motionInteractiveDismiss {
+                        selectedCard = nil
+                    }
+            }
+        }
+    }
 }
 ```
 
-The system navigation stack, deep links, and ordinary back behavior remain in
-charge. If a transition cannot be resolved, navigation still succeeds.
+This namespace-based path uses the native zoom transition and is the only
+transition compositor enabled by default. The 0.2 snapshot compositor is
+quarantined behind
+`MotionTransitionHost(renderingMode: .compositor)` while its
+single-surface rewrite is validated. Do not enable it in a production host.
+
+`Examples/ESMotionTransitionLab` is the isolated compositor target. It uses
+one opaque `MTKView`, one display callback, one Metal render pass, and a
+required static destination proxy.
+
+## ESMotionDemo
+
+`Examples/ESMotionDemo` is a standalone iOS host using the stable native
+shared-element path. It covers card presentation, button and edge dismissal,
+rapid-tap protection, deep-link entry, and system fallback.
+
+```bash
+cd Examples/ESMotionDemo
+xcodegen generate
+xcodebuild \
+  -project ESMotionDemo.xcodeproj \
+  -scheme ESMotionDemo \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  test
+```
 
 ## Performance contract
 
 - A host owns one `MotionDisplayCoordinator`.
+- When the experimental compositor is explicitly enabled, a transition host
+  owns one coordinator, one overlay, and at most one active transition session.
 - Per-frame ticks use callbacks rather than Observation invalidation.
+- Source and destination snapshots share a 32 MB session budget and are captured
+  once.
 - High-impact interactions request 80–120 Hz only while active.
 - Ambient scenes use 30 Hz by default and reduce quality under power or thermal
   pressure.
@@ -86,7 +121,8 @@ DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer swift run esmotion
 ```
 
 See [Architecture](Documentation/Architecture.md) and
-[Performance](Documentation/Performance.md).
+[Performance](Documentation/Performance.md). The 0.1 compatibility notes are in
+[Migrating to 0.2](Documentation/Migrating-to-0.2.md).
 
 ## License
 

@@ -9,6 +9,7 @@ public final class MotionDisplayCoordinator {
     private struct Registration {
         var budget: MotionBudget
         var isSuspended: Bool
+        var continuesWhenReducedMotion: Bool
         var callback: Callback
     }
 
@@ -51,12 +52,14 @@ public final class MotionDisplayCoordinator {
     public func register(
         budget: MotionBudget,
         isSuspended: Bool = false,
+        continuesWhenReducedMotion: Bool = false,
         callback: @escaping Callback
     ) -> UUID {
         let id = UUID()
         registrations[id] = Registration(
             budget: budget,
             isSuspended: isSuspended,
+            continuesWhenReducedMotion: continuesWhenReducedMotion,
             callback: callback
         )
         resolveActivePolicy()
@@ -112,6 +115,8 @@ public final class MotionDisplayCoordinator {
     private func resolveActivePolicy() {
         let activeRegistrations = registrations.values.filter {
             !$0.isSuspended
+                && (!runtimeInputs.prefersReducedMotion
+                    || $0.continuesWhenReducedMotion)
         }
         activeCallbacks = activeRegistrations.map(\.callback)
         activeBudget = activeRegistrations
@@ -135,9 +140,20 @@ public final class MotionDisplayCoordinator {
         }
 
         timeWrap = activeBudget.timeWrap
+        let permitsReducedMotionPlayback = activeRegistrations.contains {
+            $0.continuesWhenReducedMotion
+        }
+        let policyInputs = MotionRuntimeInputs(
+            isExternallySuspended: runtimeInputs.isExternallySuspended,
+            isSceneActive: runtimeInputs.isSceneActive,
+            prefersReducedMotion: runtimeInputs.prefersReducedMotion
+                && !permitsReducedMotionPlayback,
+            prefersPowerSaving: runtimeInputs.prefersPowerSaving,
+            thermalPressure: runtimeInputs.thermalPressure
+        )
         decision = MotionRuntimePolicy.resolve(
             budget: activeBudget,
-            inputs: runtimeInputs
+            inputs: policyInputs
         )
         updateDriverPolicy()
     }

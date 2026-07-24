@@ -37,7 +37,8 @@ let package = Package(
                 "ESMotionCore",
                 "ESMotionDocument",
                 .product(name: "Lottie", package: "lottie-spm"),
-            ]
+            ],
+            resources: [.process("Shaders")]
         ),
         .target(
             name: "ESMotionMetal",
@@ -54,7 +55,8 @@ let package = Package(
                 "ESMotionDocument",
                 "ESMotionRuntime",
                 "ESMotionMetal",
-            ]
+            ],
+            exclude: ["ESMotion.docc"]
         ),
         .executableTarget(
             name: "esmotionc",

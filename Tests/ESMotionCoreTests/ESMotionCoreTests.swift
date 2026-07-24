@@ -44,6 +44,32 @@ final class ESMotionCoreTests: XCTestCase {
         XCTAssertEqual(state.value, 0, accuracy: 0.001)
     }
 
+    func testTransitionSpringConvergesAt60_90And120Hz() {
+        for framesPerSecond in [60, 90, 120] {
+            var state = MotionSpringState(value: 0, target: 1)
+            let frameCount = framesPerSecond * 2
+            for _ in 0 ..< frameCount {
+                state.step(
+                    deltaTime: 1 / Double(framesPerSecond),
+                    spring: .transition
+                )
+            }
+
+            XCTAssertEqual(
+                state.value,
+                1,
+                accuracy: 0.001,
+                "Spring did not converge at \(framesPerSecond) Hz"
+            )
+            XCTAssertEqual(
+                state.velocity,
+                0,
+                accuracy: 0.001,
+                "Spring velocity did not settle at \(framesPerSecond) Hz"
+            )
+        }
+    }
+
     func testRuntimePolicyStopsForReduceMotion() {
         let decision = MotionRuntimePolicy.resolve(
             budget: .interaction,

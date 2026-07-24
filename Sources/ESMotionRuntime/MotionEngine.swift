@@ -2,6 +2,9 @@ import ESMotionCore
 import Foundation
 import Observation
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 public struct MotionEnvironmentState: Equatable, Sendable {
     public var isSceneActive: Bool
@@ -44,6 +47,8 @@ public final class MotionEngine {
     public private(set) var environment: MotionEnvironmentState
 
     @ObservationIgnored public let displayCoordinator: MotionDisplayCoordinator
+    @ObservationIgnored public let transitionCoordinator:
+        MotionTransitionCoordinator
     @ObservationIgnored public let metricsStore: MotionMetricsStore
     @ObservationIgnored private var notificationTokens: [NSObjectProtocol] = []
 
@@ -53,7 +58,13 @@ public final class MotionEngine {
     ) {
         self.environment = environment
         self.metricsStore = metricsStore
-        displayCoordinator = MotionDisplayCoordinator(metricsStore: metricsStore)
+        let displayCoordinator = MotionDisplayCoordinator(
+            metricsStore: metricsStore
+        )
+        self.displayCoordinator = displayCoordinator
+        transitionCoordinator = MotionTransitionCoordinator(
+            displayCoordinator: displayCoordinator
+        )
         observeSystemPolicy()
         applyCurrentPolicy()
     }
@@ -147,6 +158,19 @@ public final class MotionEngine {
                 }
             }
         )
+        #if os(iOS)
+        notificationTokens.append(
+            center.addObserver(
+                forName: UIApplication.didReceiveMemoryWarningNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.transitionCoordinator.releaseCachedResources()
+                }
+            }
+        )
+        #endif
     }
 
     private func applyCurrentPolicy() {
@@ -157,6 +181,12 @@ public final class MotionEngine {
                 prefersPowerSaving: environment.prefersPowerSaving,
                 thermalPressure: environment.thermalPressure
             )
+        )
+        transitionCoordinator.updateEnvironment(
+            prefersReducedMotion: environment.prefersReducedMotion,
+            prefersPowerSaving: environment.prefersPowerSaving,
+            isSceneActive: environment.isSceneActive,
+            thermalPressure: environment.thermalPressure
         )
     }
 }
@@ -180,6 +210,10 @@ public struct MotionHost<Content: View>: View {
     public var body: some View {
         content
             .environment(engine)
+            .environment(
+                \.motionTransitionCoordinator,
+                engine.transitionCoordinator
+            )
             .onChange(of: scenePhase, initial: true) { _, phase in
                 engine.updateSceneActive(phase == .active)
             }
