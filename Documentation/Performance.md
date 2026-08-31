@@ -1,36 +1,50 @@
-# Performance
+# ESMotion 0.2 performance contract
 
-## Frame budgets
+## Runtime invariants
 
-| Workload | Minimum | Maximum | Preferred |
-| --- | ---: | ---: | ---: |
-| Interactive transition | 80 Hz | 120 Hz | 120 Hz |
-| Foreground scene | 30 Hz | 60 Hz | 60 Hz |
-| Ambient scene | 15 Hz | 30 Hz | 30 Hz |
-| Low power ambient | 10 Hz | 20 Hz | 15 Hz |
+- One display link exists only while a spring is animating.
+- Per-frame progress does not invalidate SwiftUI Observation.
+- A session contains exactly two portal snapshots.
+- The default combined snapshot budget is 24 MB.
+- Automatic capture is capped at 2x scale and can degrade to 0.75x.
+- Snapshot capture, image downsampling, layout settlement, and provider work
+  happen before the display driver starts.
+- Dismissal reuses a warmed session so an edge gesture can display its first
+  portal frame without recapturing.
+- Cached snapshots are invalidated on size changes, explicit invalidation, or
+  memory pressure.
 
-The system may choose a different supported refresh rate. Motion must always use
-timestamps rather than assuming a fixed frame delta.
+## Runtime policy
 
-## Rules
+| Condition | Preferred refresh | Snapshot multiplier | Behavior |
+| --- | ---: | ---: | --- |
+| Nominal | 120 Hz | 1.00 | Portal spring |
+| Low power | 60 Hz | 0.80 | Portal spring |
+| Fair thermal | 90 Hz | 0.90 | Portal spring |
+| Serious thermal | 60 Hz | 0.72 | Portal spring |
+| Reduce Motion | 60 Hz | 0.80 | Fixed-frame crossfade |
+| Inactive / critical | stopped | n/a | Land on requested boundary |
 
-- Maintain one display link per host.
-- Never parse JSON, decode images, sort collections, or perform networking in a
-  frame callback.
-- Register only visible scenes and unregister them on disappearance.
-- Use stable IDs for transition sources and destinations.
-- Reduce render scale using policy bands with hysteresis; do not react to every
-  individual slow frame.
-- Stop continuous display updates when no callback is registered.
-- Profile Release builds on physical hardware using Animation Hitches, Time
-  Profiler, and Metal System Trace.
+The display may choose a supported rate different from the preference. The
+analytic solver uses timestamps and does not assume a fixed refresh rate.
 
-## Acceptance reference
+## Acceptance gates
 
-On an iPhone 16 Pro:
+Package and UI endpoint tests are necessary but do not prove visual quality.
+Release acceptance requires all of the following on the target device path:
 
-- transition p95 frame interval ≤ 8.33 ms;
-- transition p99 frame interval ≤ 16.67 ms;
-- no main-thread hang ≥ 100 ms;
-- no leak after 50 repeated push/pop cycles;
-- settled memory no more than 10 MB above the warmed baseline.
+- no duplicate source or destination layer;
+- no transparent hole or sampled-color patch;
+- no competing custom and system edge gesture;
+- no visible flash during live-view handoff;
+- presentation, dismissal, cancellation, and rapid reversal share one path;
+- Reduce Motion uses no spatial portal movement;
+- first animated frame latency below 100 ms with a warmed session;
+- p95 frame interval at or below 8.33 ms on a 120 Hz target;
+- p99 frame interval at or below 16.67 ms;
+- no main-thread stall at or above 100 ms;
+- memory returns to within 10 MB of the warmed baseline after 50 cycles.
+
+Use a Release build, Animation Hitches, Time Profiler, and representative
+frame/video review. Report build, interaction, visual, performance, and physical
+device evidence separately.

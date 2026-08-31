@@ -1,16 +1,22 @@
-# Examples
+# ESMotionShowcase
 
-`ESMotionGallery` is a buildable SwiftUI executable included in the package. It demonstrates:
+`ESMotionShowcase` is the only 0.2 example. It exercises the same runtime path
+for tap presentation, close-button dismissal, edge-driven interaction,
+cancellation, re-entry, Reduce Motion, and telemetry.
 
-- a system-owned `NavigationStack`;
-- registered source and destination transitions;
-- press feedback;
-- a shared display coordinator;
-- adaptive Metal snow scenes;
-- automatic Reduce Motion and lifecycle behavior.
+Generate and build:
 
-Run it from Xcode or with:
+```bash
+cd Examples/ESMotionShowcase
+xcodegen generate
 
-```sh
-swift run ESMotionGallery
+xcodebuild \
+  -project ESMotionShowcase.xcodeproj \
+  -scheme ESMotionShowcase \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  test
 ```
+
+Query `xcodebuild -showdestinations` first and use an available simulator
+runtime or UUID. A passing UI test proves interaction endpoints only; review the
+actual animation and metrics before accepting the engine.

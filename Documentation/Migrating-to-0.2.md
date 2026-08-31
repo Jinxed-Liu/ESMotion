@@ -1,40 +1,54 @@
 # Migrating to ESMotion 0.2
 
-ESMotion 0.2 keeps the namespace-based 0.1 transition API. Existing hosts do
-not need a source change and continue to use the system zoom transition.
+0.2 is intentionally source-breaking. It replaces the 0.1 platform rather than
+layering another transition mode on top of it.
 
-The host-level snapshot overlay is currently experimental and disabled by
-default because automatic window capture can duplicate live NavigationStack
-content. Production hosts should stay on the namespace-based system zoom path.
+## Removed products
 
-To test the isolated compositor prototype:
+- `ESMotionDocument`
+- `ESMotionMetal`
+- `esmotionc`
+- `ESMotionStudio`
+- `ESMotionGallery`
 
-1. Put
-   `MotionTransitionHost(renderingMode: .compositor)` below
-   `MotionHost`.
-2. Remove the explicit `Namespace` argument from registered source and
-   destination modifiers.
-3. Mutate the route inside `MotionTransitionCoordinator.present` and
-   `dismiss`.
-4. Provide a `MotionTransitionProxy` to the destination registration.
-5. Add `motionInteractiveDismiss(id:onDismiss:)` when the destination should
-   support the engine's edge-driven return.
+Lottie playback, particles, document archives, generated symbols, and the
+authoring applications can return later as independent packages if they have a
+real product contract. They are not transition-runtime responsibilities.
 
-The route binding or `NavigationPath` remains the source of truth. ESMotion
-does not own, replace, or serialize navigation state.
+## Removed transition APIs
 
-Do not enable this prototype in eSheepNext or another production host until
-the single-surface compositor passes the Demo visual and interaction gates.
+- `MotionTransitionHost`
+- `MotionTransitionCoordinator`
+- `MotionTransitionRenderingMode`
+- `MotionTransitionProxy`
+- `MotionTransitionSnapshotPolicy`
+- namespace-based source/destination overloads
+- the compositor `present` and `dismiss` route-mutation calls
 
-## Static proxies
+There is no stable/experimental mode split in 0.2.
 
-Metal, Lottie, camera, and other continuously rendered surfaces must provide
-a `MotionTransitionProxy`. Render a static, visually compatible proxy before
-the transition begins; never parse resources, decode images, or query business
-data in the provider.
+## New host model
 
-## Fallback
+Use one `MotionPresentationHost` around the source and destination scenes.
+Register an opaque source portal with `motionPortalSource` and an opaque
+destination portal with `motionPortalDestination`. Change the item binding to
+present or dismiss.
 
-Missing hosts, registrations, snapshots, or snapshot budget automatically
-execute the route mutation without blocking navigation. Hosts can inspect
-`latestMetrics.fallbackReason` or enable the DEBUG HUD to diagnose the reason.
+If the destination scene is active at initial launch, the host displays it
+without inventing a source transition and warms a dismissal cache when both
+registrations become available.
+
+## Custom rendered content
+
+Automatic view capture is appropriate for ordinary SwiftUI/UIKit content.
+Continuously rendered surfaces must provide a static
+`MotionPortalSnapshotProvider`. The provider receives the point size, remaining
+byte count, and preferred scale; it must not perform networking, data queries,
+or resource parsing during a transition.
+
+## Application integration
+
+Do not replace an existing production navigation path merely to adopt 0.2.
+First validate the standalone Showcase visually and on hardware, then design a
+small adapter at the intended application boundary. eSheepNext remains
+unchanged during this rebuild.

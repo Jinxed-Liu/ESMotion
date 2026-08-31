@@ -1,0 +1,51 @@
+name: ESMotionShowcase
+options:
+  bundleIdPrefix: dev.esmotion
+  deploymentTarget:
+    iOS: "26.0"
+  xcodeVersion: "27.0"
+packages:
+  ESMotion:
+    path: ../..
+targets:
+  ESMotionShowcase:
+    type: application
+    platform: iOS
+    sources:
+      - ESMotionShowcase
+    dependencies:
+      - package: ESMotion
+        product: ESMotion
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.esmotion.showcase
+        PRODUCT_NAME: ESMotionShowcase
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"
+  ESMotionShowcaseUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - ESMotionShowcaseUITests
+    dependencies:
+      - target: ESMotionShowcase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.esmotion.showcase.uitests
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  ESMotionShowcase:
+    build:
+      targets:
+        ESMotionShowcase: all
+        ESMotionShowcaseUITests: [test]
+    test:
+      targets:
+        - ESMotionShowcaseUITests

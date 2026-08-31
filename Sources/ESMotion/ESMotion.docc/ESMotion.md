@@ -1,42 +1,38 @@
 # ``ESMotion``
 
-Build interruptible, accessible motion without replacing an application's routing or business state.
+Build interruptible portal transitions with one live-scene runtime.
 
 ## Overview
 
-ESMotion separates stable host state from per-frame rendering. A host owns one ``MotionEngine``, while active scenes subscribe to its shared display coordinator through ``MotionTimelineView``.
+ESMotion 0.2 keeps source and destination SwiftUI scenes alive in one container,
+captures only explicitly registered portal regions, and drives one Core
+Animation overlay from a frame-rate-independent state machine.
 
-Use ``MotionTransitionHost`` with ``SwiftUI/NavigationStack`` to register shared-element sources and destinations while keeping system navigation semantics.
+Use ``MotionPresentationHost`` with an application-owned item binding. Mark the
+portal endpoints with ``SwiftUI/View/motionPortalSource(id:cornerRadius:isOpaque:snapshotProvider:)``
+and ``SwiftUI/View/motionPortalDestination(id:cornerRadius:isOpaque:snapshotProvider:)``.
 
 ## Topics
 
-### Engine
+### Host and engine
 
 - ``MotionEngine``
-- ``MotionHost``
-- ``MotionTimelineView``
-- ``MotionBudget``
+- ``MotionPresentationHost``
+- ``MotionEngineSnapshot``
+- ``MotionDebugHUD``
 
-### Transitions
+### Portal registration
 
-- ``MotionTransitionHost``
-- ``MotionTransitionCoordinator``
-- ``MotionTransitionPhase``
 - ``MotionTransitionID``
-- ``MotionTransitionSpec``
-- ``MotionTransitionRenderingMode``
-- ``MotionTransitionProxy``
-- ``MotionTransitionSnapshotPolicy``
-- ``MotionTransitionFallbackReason``
+- ``MotionPortalSnapshotProvider``
+- ``MotionPortalSnapshotRequest``
+- ``MotionSnapshotBudget``
+
+### State and policy
+
+- ``MotionTransitionMachine``
+- ``MotionTransitionPhase``
+- ``MotionTransitionConfiguration``
+- ``MotionRuntimeConditions``
+- ``MotionRuntimeDecision``
 - ``MotionTransitionMetrics``
-
-### Assets and scenes
-
-- ``MotionLottieView``
-- ``MotionMetalParticleView``
-- ``MotionParticleScene``
-
-### Documents
-
-- ``MotionDocument``
-- ``MotionDocumentValidator``
